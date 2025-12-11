@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Tab, Language, AssetDeclaration, User, MinistryContact, Translation, WorkGroup } from './types';
 import { TEXTS as DEFAULT_TEXTS, INITIAL_CONTACTS, INITIAL_ASSETS } from './constants';
@@ -11,6 +12,7 @@ import AssetMap from './components/AssetMap';
 import Login from './components/Login';
 import UserManagement from './components/UserManagement';
 import Settings from './components/Settings';
+import MessagingModal from './components/MessagingModal';
 import { LayoutDashboard, Users, FilePlus, Bot, Globe, Menu, X, Map as MapIcon, LogOut, Shield, Settings as SettingsIcon } from 'lucide-react';
 
 const ASSETS_KEY = 'app_assets_v1';
@@ -44,6 +46,7 @@ const App: React.FC = () => {
   });
   
   const [editingAsset, setEditingAsset] = useState<AssetDeclaration | null>(null);
+  const [messagingGroup, setMessagingGroup] = useState<WorkGroup | null>(null);
 
   // Persist Contacts whenever they change
   useEffect(() => {
@@ -184,6 +187,16 @@ const App: React.FC = () => {
   return (
     <div className={`min-h-screen bg-gray-50 flex ${isRTL ? 'font-arabic' : 'font-sans'}`}>
       
+      {/* Global Messaging Modal */}
+      {messagingGroup && (
+        <MessagingModal 
+          group={messagingGroup} 
+          contacts={contacts} 
+          lang={lang} 
+          onClose={() => setMessagingGroup(null)} 
+        />
+      )}
+
       {/* Sidebar (Desktop) */}
       <aside className={`hidden md:flex flex-col w-64 bg-gov-900 text-white fixed h-full z-10 ${isRTL ? 'right-0' : 'left-0'}`}>
         <div className="p-6 border-b border-gov-700">
@@ -275,10 +288,12 @@ const App: React.FC = () => {
               <Dashboard 
                 assets={assets} 
                 contacts={contacts} 
+                groups={workGroups}
                 lang={lang} 
                 currentUser={currentUser}
                 onEdit={handleEditAsset} 
                 onDelete={handleDeleteAsset} 
+                onMessageGroup={(g) => setMessagingGroup(g)}
               />
             )}
             {activeTab === Tab.DIRECTORY && canAccessTab(currentUser, Tab.DIRECTORY) && (
@@ -293,6 +308,7 @@ const App: React.FC = () => {
                 groups={workGroups}
                 onCreateGroup={handleCreateGroup}
                 onDeleteGroup={handleDeleteGroup}
+                onMessageGroup={(g) => setMessagingGroup(g)}
               />
             )}
             {activeTab === Tab.MAP && canAccessTab(currentUser, Tab.MAP) && (
