@@ -17,9 +17,14 @@ export const ASSET_CATEGORIES = [
     { id: 'Equipment', label: { fr: 'Matériel', ar: 'معدات' } }
 ];
 
-// Mapping of Ministry ID to its Sub-Entities (Directions, Etablissements)
+export const MINISTRY_IDS = {
+  FINANCES: '00000000-0000-0000-0000-000000000001',
+  SANTE: '00000000-0000-0000-0000-000000000002',
+  EQUIPEMENT: '00000000-0000-0000-0000-000000000003',
+} as const;
+
 export const MINISTRY_STRUCTURES: Record<string, {fr: string, ar: string}[]> = {
-    '1': [ // Finances
+    [MINISTRY_IDS.FINANCES]: [
         { fr: "Cabinet du Ministre", ar: "ديوان الوزير" },
         { fr: "Direction Générale du Budget", ar: "المديرية العامة للميزانية" },
         { fr: "Direction Générale du Trésor", ar: "المديرية العامة للخزينة" },
@@ -27,7 +32,7 @@ export const MINISTRY_STRUCTURES: Record<string, {fr: string, ar: string}[]> = {
         { fr: "Direction Générale des Douanes", ar: "المديرية العامة للجمارك" },
         { fr: "Direction des Domaines et du Patrimoine", ar: "مديرية العقارات وأملاك الدولة" }
     ],
-    '2': [ // Santé
+    [MINISTRY_IDS.SANTE]: [
         { fr: "Cabinet du Ministre", ar: "ديوان الوزير" },
         { fr: "Centre Hospitalier National (CHN)", ar: "مركز الاستطباب الوطني" },
         { fr: "Hôpital Cheikh Zayed", ar: "مستشفى الشيخ زايد" },
@@ -35,7 +40,7 @@ export const MINISTRY_STRUCTURES: Record<string, {fr: string, ar: string}[]> = {
         { fr: "Institut National de Recherche en Santé Publique (INRSP)", ar: "المعهد الوطني للبحوث في مجال الصحة العمومية" },
         { fr: "Direction de la Pharmacie et des Laboratoires", ar: "مديرية الصيدلة والمختبرات" }
     ],
-    '3': [ // Equipement
+    [MINISTRY_IDS.EQUIPEMENT]: [
         { fr: "Cabinet du Ministre", ar: "ديوان الوزير" },
         { fr: "Laboratoire National des Travaux Publics (LNTP)", ar: "المختبر الوطني للأشغال العامة" },
         { fr: "Etablissement des Travaux d'Entretien Routier (ETER)", ar: "مؤسسة أشغال صيانة الطرق" },
@@ -221,122 +226,3 @@ export const TEXTS: Translation = {
   aiButton: { fr: "Générer (FR + AR)", ar: "إنشاء (فرنسي + عربي)" },
 };
 
-export const INITIAL_CONTACTS: MinistryContact[] = [
-  {
-    id: '1',
-    name: { fr: "Ministère des Finances", ar: "وزارة المالية" },
-    department: { fr: "Direction du Patrimoine", ar: "مديرية العقارات" },
-    representative: "M. Ahmed O.",
-    role: { fr: "Directeur", ar: "مدير" },
-    phone: "22245001234", 
-    email: "patrimoine@finances.gov.mr",
-    complianceStatus: 'compliant',
-    lastSubmission: '2024-03-01'
-  },
-  {
-    id: '2',
-    name: { fr: "Ministère de la Santé", ar: "وزارة الصحة" },
-    department: { fr: "Logistique & Matériel", ar: "اللوجستيك والمعدات" },
-    representative: "Dr. Fatimetou Z.",
-    role: { fr: "Point Focal", ar: "نقطة اتصال" },
-    phone: "22245009876",
-    email: "logistique@sante.gov.mr",
-    complianceStatus: 'pending',
-    lastSubmission: '2023-11-15'
-  },
-  {
-    id: '3',
-    name: { fr: "Ministère de l'Équipement", ar: "وزارة التجهيز والنقل" },
-    department: { fr: "Parc Mobile de l'État", ar: "حظيرة الدولة" },
-    representative: "Ing. Brahim S.",
-    role: { fr: "Chef de Parc", ar: "رئيس الحظيرة" },
-    phone: "22245001122",
-    email: "materiel@equipement.gov.mr",
-    complianceStatus: 'overdue',
-    lastSubmission: '2023-01-10'
-  }
-];
-
-export const INITIAL_ASSETS: AssetDeclaration[] = [
-  { 
-    id: 'a1', 
-    reference: 'V-2023-001', 
-    ministryId: '2', 
-    subEntity: 'Centre Hospitalier National (CHN)',
-    type: 'Vehicle', 
-    condition: 'Good', 
-    description: 'Ambulance Toyota Land Cruiser 4x4', 
-    acquisitionDate: '2023-01-15',
-    value: 2500000, 
-    wilaya: 'Nouakchott Ouest', 
-    coordinates: { lat: 18.0945, lng: -15.9680 },
-    locationDetails: 'Hôpital National',
-    documents: [],
-    specificDetails: {
-        brand: 'Toyota',
-        model: 'Land Cruiser',
-        plateNumber: '1234AA00',
-        chassisNumber: 'JTE123456789'
-    }
-  },
-  { 
-    id: 'a2', 
-    reference: 'I-2022-045', 
-    ministryId: '2', 
-    subEntity: 'Direction de la Pharmacie et des Laboratoires',
-    type: 'RealEstate', 
-    condition: 'Good', 
-    description: 'Centre de Santé Communautaire Type B', 
-    acquisitionDate: '2022-06-01',
-    value: 14500000, 
-    wilaya: 'Dakhlet Nouadhibou', 
-    coordinates: { lat: 20.9388, lng: -17.0347 },
-    locationDetails: 'Quartier Madrid',
-    documents: [],
-    specificDetails: {
-        surfaceArea: '400',
-        landTitle: 'TF-9088',
-        usage: 'Santé'
-    }
-  },
-  { 
-    id: 'a3', 
-    reference: 'E-2024-010', 
-    ministryId: '1',
-    subEntity: 'Direction Générale du Budget',
-    type: 'IT', 
-    condition: 'New', 
-    description: 'Serveur de Données Sécurisé', 
-    acquisitionDate: '2024-02-10',
-    value: 650000, 
-    wilaya: 'Nouakchott Nord', 
-    coordinates: { lat: 18.0800, lng: -15.9500 },
-    locationDetails: 'Datacenter MinFin',
-    documents: [],
-    specificDetails: {
-        brand: 'Dell',
-        serialNumber: 'SRV-999-X',
-        specs: 'Xeon 64GB RAM'
-    }
-  },
-  { 
-    id: 'a4', 
-    reference: 'R-2021-99', 
-    ministryId: '3', 
-    subEntity: 'Etablissement des Travaux d\'Entretien Routier (ETER)',
-    type: 'RealEstate', 
-    condition: 'NeedsRepair', 
-    description: 'Bâtiment Administratif Annexe', 
-    acquisitionDate: '2010-02-10',
-    value: 8000000, 
-    wilaya: 'Adrar', 
-    coordinates: { lat: 20.5167, lng: -13.0500 },
-    locationDetails: 'Atar Centre',
-    documents: [],
-    specificDetails: {
-        surfaceArea: '150',
-        landTitle: 'TF-1010',
-        usage: 'Bureau'
-    }
-  }
-];

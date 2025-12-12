@@ -1,9 +1,10 @@
 
 import React, { useState, useEffect } from 'react';
 import { Tab, Language, AssetDeclaration, User, MinistryContact, Translation, WorkGroup } from './types';
-import { TEXTS as DEFAULT_TEXTS, INITIAL_CONTACTS, INITIAL_ASSETS } from './constants';
+import { TEXTS as DEFAULT_TEXTS } from './constants';
 import { hasPermission, canAccessTab } from './services/authService';
 import { getAppTexts } from './services/settingsService';
+import { dataService } from './services/dataService';
 import Dashboard from './components/Dashboard';
 import ContactDirectory from './components/ContactDirectory';
 import AssetDeclarationForm from './components/AssetDeclarationForm';
@@ -15,53 +16,43 @@ import Settings from './components/Settings';
 import MessagingModal from './components/MessagingModal';
 import { LayoutDashboard, Users, FilePlus, Bot, Globe, Menu, X, Map as MapIcon, LogOut, Shield, Settings as SettingsIcon } from 'lucide-react';
 
-const ASSETS_KEY = 'app_assets_v1';
-const CONTACTS_KEY = 'app_contacts_v1';
-const GROUPS_KEY = 'app_groups_v1';
-
 const App: React.FC = () => {
   const [lang, setLang] = useState<Language>('fr');
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [appTexts, setAppTexts] = useState<Translation>(DEFAULT_TEXTS);
-  
+
   const [activeTab, setActiveTab] = useState<Tab>(Tab.DASHBOARD);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  
-  // Initialize Contacts from LocalStorage or Constants
-  const [contacts, setContacts] = useState<MinistryContact[]>(() => {
-    const saved = localStorage.getItem(CONTACTS_KEY);
-    return saved ? JSON.parse(saved) : INITIAL_CONTACTS;
-  });
 
-  // Initialize Assets from LocalStorage or Constants
-  const [assets, setAssets] = useState<AssetDeclaration[]>(() => {
-    const saved = localStorage.getItem(ASSETS_KEY);
-    return saved ? JSON.parse(saved) : INITIAL_ASSETS;
-  });
+  const [contacts, setContacts] = useState<MinistryContact[]>([]);
+  const [assets, setAssets] = useState<AssetDeclaration[]>([]);
+  const [workGroups, setWorkGroups] = useState<WorkGroup[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  // Initialize Work Groups
-  const [workGroups, setWorkGroups] = useState<WorkGroup[]>(() => {
-    const saved = localStorage.getItem(GROUPS_KEY);
-    return saved ? JSON.parse(saved) : [];
-  });
-  
   const [editingAsset, setEditingAsset] = useState<AssetDeclaration | null>(null);
   const [messagingGroup, setMessagingGroup] = useState<WorkGroup | null>(null);
 
-  // Persist Contacts whenever they change
   useEffect(() => {
-    localStorage.setItem(CONTACTS_KEY, JSON.stringify(contacts));
-  }, [contacts]);
+    loadData();
+  }, []);
 
-  // Persist Assets whenever they change
-  useEffect(() => {
-    localStorage.setItem(ASSETS_KEY, JSON.stringify(assets));
-  }, [assets]);
-
-  // Persist Groups whenever they change
-  useEffect(() => {
-    localStorage.setItem(GROUPS_KEY, JSON.stringify(workGroups));
-  }, [workGroups]);
+  const loadData = async () => {
+    try {
+      setLoading(true);
+      const [contactsData, assetsData, groupsData] = await Promise.all([
+        dataService.getContacts(),
+        dataService.getAssets(),
+        dataService.getWorkGroups(),
+      ]);
+      setContacts(contactsData);
+      setAssets(assetsData);
+      setWorkGroups(groupsData);
+    } catch (error) {
+      console.error('Error loading data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Load custom texts on mount
   useEffect(() => {
@@ -92,21 +83,30 @@ const App: React.FC = () => {
     setAppTexts(newTexts);
   };
 
-  // --- ASSET CRUD ---
-  const handleSaveAsset = (savedAsset: AssetDeclaration) => {
-    if (editingAsset) {
-      // Update existing
-      setAssets(prev => prev.map(a => a.id === savedAsset.id ? savedAsset : a));
-      setEditingAsset(null);
-    } else {
-      // Create new
-      setAssets(prev => [savedAsset, ...prev]);
+  const handleSaveAsset = async (savedAsset: AssetDeclaration) => {
+    try {
+      if (editingAsset) {
+        await dataService.updateAsset(savedAsset);
+        setEditingAsset(null);
+      } else {
+        await dataService.addAsset(savedAsset);
+      }
+      await loadData();
+    } catch (error) {
+      console.error('Error saving asset:', error);
+      alert(lang === 'fr' ? 'Erreur lors de l\'enregistrement' : 'خطأ في الحفظ');
     }
   };
 
-  const handleDeleteAsset = (id: string) => {
+  const handleDeleteAsset = async (id: string) => {
     if (confirm(lang === 'fr' ? 'Êtes-vous sûr de vouloir supprimer ce bien ?' : 'هل أنت متأكد من حذف هذا الأصل؟')) {
-      setAssets(prev => prev.filter(a => a.id !== id));
+      try {
+        await dataService.deleteAsset(id);
+        await loadData();
+      } catch (error) {
+        console.error('Error deleting asset:', error);
+        alert(lang === 'fr' ? 'Erreur lors de la suppression' : 'خطأ في الحذف');
+      }
     }
   };
 
@@ -115,48 +115,80 @@ const App: React.FC = () => {
     setActiveTab(Tab.DECLARATION);
   };
 
-  // --- MINISTRY CONTACT CRUD ---
-  const handleAddContacts = (newContacts: MinistryContact[]) => {
-      setContacts(prev => [...prev, ...newContacts]);
+  const handleAddContacts = async (newContacts: MinistryContact[]) => {
+    try {
+      await dataService.addContacts(newContacts);
+      await loadData();
+    } catch (error) {
+      console.error('Error adding contacts:', error);
+      alert(lang === 'fr' ? 'Erreur lors de l\'ajout' : 'خطأ في الإضافة');
+    }
   };
 
-  const handleUpdateContact = (updatedContact: MinistryContact) => {
-      setContacts(prev => prev.map(c => c.id === updatedContact.id ? updatedContact : c));
+  const handleUpdateContact = async (updatedContact: MinistryContact) => {
+    try {
+      await dataService.updateContact(updatedContact);
+      await loadData();
+    } catch (error) {
+      console.error('Error updating contact:', error);
+      alert(lang === 'fr' ? 'Erreur lors de la mise à jour' : 'خطأ في التحديث');
+    }
   };
 
-  const handleDeleteContact = (id: string) => {
-      if (confirm(lang === 'fr' ? 'Supprimer ce ministère et tous ses biens associés ?' : 'حذف هذه الوزارة وجميع ممتلكاتها المرتبطة؟')) {
-          setContacts(prev => prev.filter(c => c.id !== id));
-          // Optionally delete assets associated with this ministry to maintain consistency
-          setAssets(prev => prev.filter(a => a.ministryId !== id));
+  const handleDeleteContact = async (id: string) => {
+    if (confirm(lang === 'fr' ? 'Supprimer ce ministère et tous ses biens associés ?' : 'حذف هذه الوزارة وجميع ممتلكاتها المرتبطة؟')) {
+      try {
+        await dataService.deleteContact(id);
+        await loadData();
+      } catch (error) {
+        console.error('Error deleting contact:', error);
+        alert(lang === 'fr' ? 'Erreur lors de la suppression' : 'خطأ في الحذف');
       }
+    }
   };
 
-  // --- GROUP CRUD ---
-  const handleCreateGroup = (name: string, contactIds: string[]) => {
-      const newGroup: WorkGroup = {
-          id: `grp-${Date.now()}`,
-          name,
-          contactIds
-      };
-      setWorkGroups(prev => [...prev, newGroup]);
+  const handleCreateGroup = async (name: string, contactIds: string[]) => {
+    try {
+      await dataService.createWorkGroup(name, contactIds);
+      await loadData();
+    } catch (error) {
+      console.error('Error creating group:', error);
+      alert(lang === 'fr' ? 'Erreur lors de la création du groupe' : 'خطأ في إنشاء المجموعة');
+    }
   };
 
-  const handleDeleteGroup = (id: string) => {
-      setWorkGroups(prev => prev.filter(g => g.id !== id));
+  const handleDeleteGroup = async (id: string) => {
+    try {
+      await dataService.deleteWorkGroup(id);
+      await loadData();
+    } catch (error) {
+      console.error('Error deleting group:', error);
+      alert(lang === 'fr' ? 'Erreur lors de la suppression du groupe' : 'خطأ في حذف المجموعة');
+    }
   };
 
   const isRTL = lang === 'ar';
 
   if (!currentUser) {
     return (
-      <Login 
-        lang={lang} 
-        onLogin={handleLogin} 
-        appTexts={appTexts} 
+      <Login
+        lang={lang}
+        onLogin={handleLogin}
+        appTexts={appTexts}
         contacts={contacts}
         onRegisterNewMinistry={handleAddContacts}
       />
+    );
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-gov-700 mx-auto mb-4"></div>
+          <p className="text-gray-600">{lang === 'fr' ? 'Chargement...' : 'جاري التحميل...'}</p>
+        </div>
+      </div>
     );
   }
 
